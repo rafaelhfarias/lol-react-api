@@ -8,7 +8,7 @@ const path = require('path');
 
 
 
-const SERVER_PORT = 3000;
+const SERVER_PORT = process.env.PORT || 5000;
 
 //KOA SETTINGS
 const app = new express()
