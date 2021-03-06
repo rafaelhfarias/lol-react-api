@@ -25,7 +25,6 @@ io.on('connection', (socket) => {
 
     setInterval(() => {
         updateScoreBoard().then(gameStats => {
-            console.log(gameStats)
             socket.emit('updateScoreBoard', gameStats)
         });
 
@@ -38,19 +37,20 @@ io.on('connection', (socket) => {
 
 
 // partidas do dia
-app.get('/games', async (req,getRes) => {
-    await axios.get('https://esports-api.lolesports.com/persisted/gw/getSchedule?hl=pt-BR&leagueId=105549980953490846',
+app.get('/games/:id', async (req,getRes) => {
+    console.log("Liga selecionada: ", req.params.id)
+    await axios.get(`https://esports-api.lolesports.com/persisted/gw/getSchedule?hl=pt-BR&leagueId=${req.params.id}`,
         {
             headers:
                 { 'x-api-key': '0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z' }
         })
         .then((res) => {
-            //console.log('[DATA]: ',util.inspect(res.data,{depth: null}));
+            console.log("Data: ",req.query.date)
             if (res.data.data != null) {
                 let events = res.data.data.schedule.events.filter((el) => {
-                    return new Date(el.startTime).getDate() == new Date().getDate() &&
-                        new Date(el.startTime).getMonth() == new Date().getMonth() &&
-                        new Date(el.startTime).getFullYear() == new Date().getFullYear() &&
+                    return new Date(el.startTime).getDate() == new Date(req.query.date).getDate() &&
+                        new Date(el.startTime).getMonth() == new Date(req.query.date).getMonth() &&
+                        new Date(el.startTime).getFullYear() == new Date(req.query.date).getFullYear() &&
                         el.hasOwnProperty('match')
                 }).map((el) => {
                     //      console.log(util.inspect(el, { depth: null }));
@@ -68,9 +68,17 @@ app.get('/games', async (req,getRes) => {
         })
 })
 
+app.get('/setgame/', async (req,res) => {
+    selectedGameId = null
+    console.log("Nenhuma partida selecionada")
+    res.send("Sucess!!")
+
+})
+
 app.get('/setgame/:id', async (req,res) => {
+    if (req.params.id == null) selectedGameId = null
     selectedGameId = String(BigInt(req.params.id) + BigInt(1))
-    console.log(util.inspect(req.params, { depth: null }))
+    console.log("Partida selecionada: ",util.inspect(req.params, { depth: null }))
     console.log(selectedGameId)
     res.send("Sucess!!")
 
@@ -98,7 +106,6 @@ const updateScoreBoard = async () => {
 
             let data = res.data;
 
-            console.log(startingTime);
             if (data == null || data.frames == null) return;
             let lastFrame = data.frames.pop();
             let metadata = data.gameMetadata;
